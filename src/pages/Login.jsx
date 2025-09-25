@@ -27,8 +27,8 @@ export default function Login() {
     setLoading(true);
     setMessage('');
     try {
-      await login({ email, password });
-      nav('/');
+      await login( email, password );
+      // nav('/');
     } catch (err) {
       setMessage(err.response?.data?.detail || 'Login failed');
     } finally {

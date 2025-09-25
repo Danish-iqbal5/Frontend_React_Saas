@@ -53,7 +53,7 @@ function VendorDashboard() {
   // Check if user is vendor
   useEffect(() => {
     const role = localStorage.getItem('role');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('tokens');
     
     if (!token) {
       navigate('/login');

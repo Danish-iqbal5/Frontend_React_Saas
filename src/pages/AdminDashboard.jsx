@@ -32,7 +32,7 @@ function AdminDashboard() {
   // Check if user is admin when component loads
   useEffect(() => {
     const role = localStorage.getItem('role');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('tokens');
     
     // Check if user is logged in
     if (!token) {
@@ -41,33 +41,33 @@ function AdminDashboard() {
       return;
     }
     
-    // Check if user is admin
-    if (role !== 'admin') {
+    
+    if (role !== 'superuser') {
       alert('Access denied. Admin only.');
       navigate('/');
       return;
     }
     
-    // Load pending requests
+  
     loadPendingRequests();
   }, [navigate]);
   
-  // Function to load pending requests
+  
   const loadPendingRequests = async () => {
     try {
       setLoading(true);
       setError('');
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('tokens');
       
-      // Set authorization header
+      
       const response = await api.get('/admin-dashboard/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
-      // Set pending requests
+    
       setPendingRequests(response.data || []);
       
     } catch (err) {
@@ -78,14 +78,14 @@ function AdminDashboard() {
     }
   };
   
-  // Handle approve
+  
   const handleApprove = async (userId, username) => {
     try {
       setLoading(true);
       setError('');
       setSuccess('');
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('tokens');
       
       await api.post('/admin-dashboard/', 
         {

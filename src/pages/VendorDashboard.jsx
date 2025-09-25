@@ -33,13 +33,13 @@ import AddIcon from '@mui/icons-material/Add';
 function VendorDashboard() {
   const navigate = useNavigate();
   
-  // State for products
+  
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  // State for add/edit product dialog
+  
   const [openDialog, setOpenDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({

@@ -1,0 +1,81 @@
+/* Container styling: no white box, centered max width */
+.container {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: transparent; /* No white background */
+  color: #ffffff; /* white text */
+}
+
+/* Card styling for dark background */
+.card {
+  background-color: #1e1e1e; /* dark grey */
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.8);
+  color: #fff; /* white text */
+}
+
+/* Form fields */
+.field {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.field label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #bbb;
+}
+.field input,
+.field select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background-color: #2a2a2a;
+  color: #eee;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  background: #0b5fff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.btn:hover {
+  background-color: #084fbb;
+}
+.btn.secondary {
+  background: #3a3a3a;
+  color: #ccc;
+}
+
+/* Messages */
+.msg {
+  margin-top: 12px;
+  color: #0b5fff;
+}
+
+/* Navigation */
+.nav {
+  background: #0b5fff; /* Keep navbar blue */
+  padding: 12px 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+}
+.nav a {
+  text-decoration: none;
+  color: #fff;
+}
+.linklike {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}

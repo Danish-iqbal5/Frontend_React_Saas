@@ -1,0 +1,16 @@
+:root{ font-family: Inter, system-ui, Arial; }
+body{ margin:0; background:#f5f6fb; color:#111 }
+.app-root{ min-height:100vh }
+.nav{ background:#fff; padding:12px 20px; display:flex; gap:12px; align-items:center; box-shadow:0 1px 0 rgba(0,0,0,0.05) }
+.nav a{ text-decoration:none; color:#333 }
+.linklike{ background:none; border:none; color:#333; cursor:pointer; }
+.container{ padding:24px; max-width:900px; margin:0 auto }
+.card{ background:#fff; padding:20px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.04) }
+.field{ margin-bottom:12px; display:flex; flex-direction:column }
+.field label{ margin-bottom:6px; font-size:14px }
+.field input, .field select{ padding:8px 10px; border-radius:6px; border:1px solid #ddd }
+.btn{ padding:8px 12px; border-radius:6px; border:none; background:#0b5fff; color:#fff; cursor:pointer }
+.btn.secondary{ background:#e5e7eb; color:#111 }
+.btn.small{ padding:6px 8px; font-size:13px }
+.msg{ margin-top:12px; color:#0b5fff }
+.request{ padding:10px 0; border-bottom:1px dashed #eee }

@@ -22,7 +22,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setMessage('');
     try {
-      await api.post('/forgot-password/', { email });
+      await api.post('/api/forgot-password/', { email });
       setMessage(
         'If an account exists, an OTP was sent to the email. Use Reset Password to set new password.'
       );

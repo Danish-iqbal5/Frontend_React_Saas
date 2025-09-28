@@ -61,12 +61,12 @@ function AdminDashboard() {
       const token = localStorage.getItem('tokens');
       
       
-      const response = await api.get('/admin-dashboard/', {
+      const response = await api.get('api/admin-dashboard/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+        
     
       setPendingRequests(response.data || []);
       

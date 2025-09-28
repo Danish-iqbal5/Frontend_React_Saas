@@ -75,7 +75,7 @@ function VendorDashboard() {
       setLoading(true);
       setError('');
       
-      const response = await api.get('/vendor/products/');
+      const response = await api.get('/Products/vendor/products/');
       setProducts(response.data || []);
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -188,11 +188,11 @@ function VendorDashboard() {
       
       if (editingProduct) {
         // Update existing product
-        await api.put(`/vendor/products/${editingProduct.id}/`, productData);
+        await api.put(`/Products/vendor/products/${editingProduct.id}/`, productData);
         setSuccess('Product updated successfully');
       } else {
         // Add new product
-        await api.post('/vendor/products/', productData);
+        await api.post('/Products/vendor/products/', productData);
         setSuccess('Product added successfully');
       }
       

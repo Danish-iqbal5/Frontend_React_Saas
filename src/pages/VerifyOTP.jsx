@@ -20,7 +20,7 @@ e.preventDefault()
 setLoading(true)
 setMessage('')
 try{
-const res = await api.post('/verify-otp/', { email, otp },
+const res = await api.post('/api/verify-otp/', { email, otp },
     { headers: { 'Content-Type': 'application/json' } }
 )
 

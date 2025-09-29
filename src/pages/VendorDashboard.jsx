@@ -45,7 +45,8 @@ function VendorDashboard() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: '',
+    retail_price: '',
+    whole_sale_price: '', 
     quantity: '',
   });
   const [formErrors, setFormErrors] = useState({});
@@ -73,9 +74,10 @@ function VendorDashboard() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      setError('');
+      // setError('');
       
       const response = await api.get('/Products/vendor/products/');
+      console.log(response)
       setProducts(response.data || []);
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -105,6 +107,7 @@ function VendorDashboard() {
     
     // Price validation
     if (!formData.price) {
+      
       errors.price = 'Price is required';
     } else if (parseFloat(formData.price) <= 0) {
       errors.price = 'Price must be greater than 0';
@@ -150,6 +153,9 @@ function VendorDashboard() {
       description: '',
       price: '',
       quantity: '',
+      whole_sale_price : '',
+      stock_quantity : '',
+
     });
     setFormErrors({});
     setOpenDialog(true);
@@ -162,7 +168,8 @@ function VendorDashboard() {
       name: product.name,
       description: product.description,
       price: product.price.toString(),
-      quantity: product.quantity.toString(),
+      whole_sale_price : product.whole_sale_price.toString(),
+      stock_quantity: product.quantity,
     });
     setFormErrors({});
     setOpenDialog(true);
@@ -182,8 +189,9 @@ function VendorDashboard() {
       const productData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        price: parseFloat(formData.price),
-        quantity: parseInt(formData.quantity),
+        retail_price: parseFloat(formData.price),
+        whole_sale_price: parseFloat(formData.whole_sale_price  ),
+        stock_quantity: parseInt(formData.quantity),
       };
       
       if (editingProduct) {
@@ -217,7 +225,7 @@ function VendorDashboard() {
       setLoading(true);
       setError('');
       
-      await api.delete(`/vendor/products/${productId}/`);
+      await api.delete(`/Products/vendor/products/${productId}/`);
       setSuccess('Product deleted successfully');
       fetchProducts();
     } catch (err) {
@@ -229,6 +237,7 @@ function VendorDashboard() {
   };
 
   return (
+    
     <Container sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
         Vendor Dashboard
@@ -292,11 +301,11 @@ function VendorDashboard() {
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.description}</TableCell>
                       <TableCell>${product.price}</TableCell>
-                      <TableCell>{product.quantity}</TableCell>
+                      <TableCell>{product.stock_quantity}</TableCell>
                       <TableCell>
                         <Chip
-                          label={product.quantity > 0 ? 'In Stock' : 'Out of Stock'}
-                          color={product.quantity > 0 ? 'success' : 'error'}
+                          label={product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                          color={product.stock_quantity > 0 ? 'success' : 'error'}
                           size="small"
                         />
                       </TableCell>
@@ -354,13 +363,27 @@ function VendorDashboard() {
                 helperText={formErrors.description}
               />
             </Grid>
+           
             <Grid item xs={6}>
               <TextField
                 fullWidth
-                label="Price ($)"
+                label="whole  Price ($)"
+                name="whole_sale_price"
+                type="number"
+                value={formData.whole_sale_price}
+                onChange={handleInputChange}
+                error={!!formErrors.price}
+                helperText={formErrors.price}
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Retail Price ($)"
                 name="price"
                 type="number"
-                value={formData.price}
+                value={formData.retail_price}
                 onChange={handleInputChange}
                 error={!!formErrors.price}
                 helperText={formErrors.price}
@@ -373,6 +396,18 @@ function VendorDashboard() {
                 name="quantity"
                 type="number"
                 value={formData.quantity}
+                onChange={handleInputChange}
+                error={!!formErrors.quantity}
+                helperText={formErrors.quantity}
+              />
+            </Grid>
+             <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Stock Quantity"
+                name="stock_quantity"
+                type="number"
+                value={formData.stock_quantity}
                 onChange={handleInputChange}
                 error={!!formErrors.quantity}
                 helperText={formErrors.quantity}

@@ -12,21 +12,16 @@ import ResetPassword from './pages/ResetPassword';
 import AdminDashboard from './pages/AdminDashboard';
 import VendorDashboard from './pages/VendorDashboard';
 import PrivateRoute from './components/PrivateRoute';
+import PublicRoute from './components/PublicRoute';
 import VerifyOTP from './pages/VerifyOTP';
 import Homepage from './pages/Homepage';
 import Products from './pages/Products';
 import Cart from './pages/Cart';
-import { useAuth } from './contexts/AuthContext';
 
 export default function App() {
-  const { user } = useAuth();
-
   return (
     <ThemeProvider theme={theme}>
-      {/* CssBaseline resets default browser styles and applies theme background */}
       <CssBaseline />
-
-      {/* Wrap the entire app content in Box to enforce background + text color */}
       <Box
         sx={{
           bgcolor: 'background.default',
@@ -37,18 +32,74 @@ export default function App() {
       >
         <main>
           <Routes>
+            {/* Public routes - accessible to all */}
             <Route path="/" element={<Homepage />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/verify-otp" element={<VerifyOTP />} />
-            <Route path="/login"   element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Auth routes - redirect to dashboard if already logged in */}
+            <Route 
+              path="/signup" 
+              element={
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/verify-otp" 
+              element={
+                <PublicRoute>
+                  <VerifyOTP />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/login" 
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/forgot-password" 
+              element={
+                <PublicRoute>
+                  <ForgotPassword />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/reset-password" 
+              element={
+                <PublicRoute>
+                  <ResetPassword />
+                </PublicRoute>
+              } 
+            />
+
+            {/* Protected routes - require authentication */}
+            <Route
+              path="/products"
+              element={
+                <PrivateRoute>
+                  <Products />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/cart"
+              element={
+                <PrivateRoute>
+                  <Cart />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Role-based protected routes */}
             <Route
               path="/vendor"
               element={
-                <PrivateRoute>
+                <PrivateRoute allowedRoles="vendor">
                   <VendorDashboard />
                 </PrivateRoute>
               }
@@ -56,10 +107,21 @@ export default function App() {
             <Route
               path="/admin"
               element={
-                <PrivateRoute>
+                <PrivateRoute allowedRoles="superuser">
                   <AdminDashboard />
                 </PrivateRoute>
               }
+            />
+
+            {/* 404 fallback - you can create a NotFound component later */}
+            <Route 
+              path="*" 
+              element={
+                <Box sx={{ textAlign: 'center', mt: 8 }}>
+                  <h1>404 - Page Not Found</h1>
+                  <p>The page you're looking for doesn't exist.</p>
+                </Box>
+              } 
             />
           </Routes>
         </main>

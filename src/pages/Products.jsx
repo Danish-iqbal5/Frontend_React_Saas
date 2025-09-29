@@ -28,7 +28,6 @@ import {
 import {
   Search as SearchIcon,
   ShoppingCart as ShoppingCartIcon,
-  FilterList as FilterIcon,
   Clear as ClearIcon,
   Store as StoreIcon,
 } from '@mui/icons-material';
@@ -313,7 +312,7 @@ const Products = () => {
           {/* Chips for stock and vendor */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip
-              label={`Stock: ${product.quantity || 0}`}
+              label={`Stock: ${product.stock_quantity || 0}`}
               size="small"
               color={isOutOfStock ? 'error' : 'success'}
               variant="outlined"

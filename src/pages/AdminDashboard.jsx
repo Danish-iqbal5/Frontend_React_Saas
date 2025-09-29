@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { adminAPI, handleAPIError } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Container,
   Card,
@@ -18,141 +19,153 @@ import {
   Paper,
   CircularProgress,
   Chip,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import {
+  Refresh as RefreshIcon,
+  CheckCircle as ApproveIcon,
+  Cancel as RejectIcon,
+} from '@mui/icons-material';
 
 function AdminDashboard() {
   const navigate = useNavigate();
+  const { logout, getUserRole } = useAuth();
   
   // State
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [processingId, setProcessingId] = useState(null);
   
-  // Check if user is admin when component loads
+  // Load pending requests on mount
   useEffect(() => {
-    const role = localStorage.getItem('role');
-    const token = localStorage.getItem('tokens');
-    
-    // Check if user is logged in
-    if (!token) {
-      alert('Please login first');
-      navigate('/login');
-      return;
-    }
-    
-    
-    if (role !== 'superuser') {
-      alert('Access denied. Admin only.');
-      navigate('/');
-      return;
-    }
-    
-  
     loadPendingRequests();
-  }, [navigate]);
+  }, []);
+
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError('');
+        setSuccess('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
   
-  
-  const loadPendingRequests = async () => {
+  /**
+   * Load pending approval requests
+   */
+  const loadPendingRequests = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
       
-      const token = localStorage.getItem('tokens');
-      
-      
-      const response = await api.get('api/admin-dashboard/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-        
-    
+      const response = await adminAPI.getDashboardData();
       setPendingRequests(response.data || []);
       
     } catch (err) {
       console.error('Error loading requests:', err);
-      setError('Failed to load pending requests. Please try again.');
+      const errorMsg = handleAPIError(err);
+      setError(errorMsg.message);
+      
+      // If unauthorized, logout
+      if (err.response?.status === 401) {
+        setTimeout(() => logout(), 2000);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
   
-  
-  const handleApprove = async (userId, username) => {
+  /**
+   * Handle user approval
+   */
+  const handleApprove = useCallback(async (userId, username) => {
+    if (!window.confirm(`Are you sure you want to approve ${username}?`)) {
+      return;
+    }
+
     try {
-      setLoading(true);
+      setProcessingId(userId);
       setError('');
       setSuccess('');
       
-      const token = localStorage.getItem('tokens');
-      
-      await api.post('/admin-dashboard/', 
-        {
-          user_id: userId,
-          action: 'approve'
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      await adminAPI.updateUserStatus(userId, 'approve');
       
       setSuccess(`User ${username} approved successfully!`);
       
       // Reload the list
-      loadPendingRequests();
+      await loadPendingRequests();
       
     } catch (err) {
       console.error('Error approving user:', err);
-      setError('Failed to approve user. Please try again.');
+      const errorMsg = handleAPIError(err);
+      setError(errorMsg.message);
     } finally {
-      setLoading(false);
+      setProcessingId(null);
     }
-  };
+  }, [loadPendingRequests]);
   
-  // Handle reject
-  const handleReject = async (userId, username) => {
+  /**
+   * Handle user rejection
+   */
+  const handleReject = useCallback(async (userId, username) => {
+    if (!window.confirm(`Are you sure you want to reject ${username}?`)) {
+      return;
+    }
+
     try {
-      setLoading(true);
+      setProcessingId(userId);
       setError('');
       setSuccess('');
       
-      const token = localStorage.getItem('token');
-      
-      await api.post('/admin-dashboard/', 
-        {
-          user_id: userId,
-          action: 'reject'
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      await adminAPI.updateUserStatus(userId, 'reject');
       
       setSuccess(`User ${username} rejected.`);
       
       // Reload the list
-      loadPendingRequests();
+      await loadPendingRequests();
       
     } catch (err) {
       console.error('Error rejecting user:', err);
-      setError('Failed to reject user. Please try again.');
+      const errorMsg = handleAPIError(err);
+      setError(errorMsg.message);
     } finally {
-      setLoading(false);
+      setProcessingId(null);
     }
-  };
+  }, [loadPendingRequests]);
+
+  /**
+   * Handle logout
+   */
+  const handleLogout = useCallback(() => {
+    logout();
+  }, [logout]);
   
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Admin Dashboard - Pending Approvals
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
+          Admin Dashboard
+        </Typography>
+        <Button 
+          variant="outlined" 
+          color="error"
+          onClick={handleLogout}
+        >
+          Logout
+        </Button>
+      </Box>
+
+      <Typography variant="h6" gutterBottom color="text.secondary">
+        Pending Approvals
       </Typography>
       
-      {/* Show messages */}
+      {/* Messages */}
       {error && (
         <Alert 
           severity="error" 
@@ -173,12 +186,13 @@ function AdminDashboard() {
         </Alert>
       )}
       
+      {/* Main Content */}
       <Card>
         <CardContent>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
-              <Typography sx={{ ml: 2 }}>Loading...</Typography>
+          {loading && !pendingRequests.length ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 3 }}>
+              <CircularProgress size={40} />
+              <Typography sx={{ ml: 2 }}>Loading pending requests...</Typography>
             </Box>
           ) : pendingRequests.length === 0 ? (
             <Alert severity="info">
@@ -186,23 +200,40 @@ function AdminDashboard() {
             </Alert>
           ) : (
             <>
-              <Typography variant="h6" gutterBottom>
-                {pendingRequests.length} Pending Request(s)
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="body1" color="text.secondary">
+                  {pendingRequests.length} Pending Request{pendingRequests.length !== 1 ? 's' : ''}
+                </Typography>
+                <Tooltip title="Refresh list">
+                  <IconButton 
+                    onClick={loadPendingRequests}
+                    disabled={loading}
+                    color="primary"
+                  >
+                    <RefreshIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
               
-              <TableContainer component={Paper}>
+              <TableContainer component={Paper} variant="outlined">
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Username</TableCell>
-                      <TableCell>Email</TableCell>
-                      <TableCell>User Type</TableCell>
-                      <TableCell>Actions</TableCell>
+                      <TableCell><strong>Username</strong></TableCell>
+                      <TableCell><strong>Email</strong></TableCell>
+                      <TableCell><strong>User Type</strong></TableCell>
+                      <TableCell align="center"><strong>Actions</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {pendingRequests.map((request) => (
-                      <TableRow key={request.id}>
+                      <TableRow 
+                        key={request.id}
+                        sx={{ 
+                          '&:hover': { bgcolor: 'action.hover' },
+                          opacity: processingId === request.id ? 0.6 : 1
+                        }}
+                      >
                         <TableCell>{request.username}</TableCell>
                         <TableCell>{request.email}</TableCell>
                         <TableCell>
@@ -212,26 +243,37 @@ function AdminDashboard() {
                             size="small"
                           />
                         </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            color="success"
-                            size="small"
-                            sx={{ mr: 1 }}
-                            onClick={() => handleApprove(request.id, request.username)}
-                            disabled={loading}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            onClick={() => handleReject(request.id, request.username)}
-                            disabled={loading}
-                          >
-                            Reject
-                          </Button>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                            <Tooltip title="Approve">
+                              <span>
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  size="small"
+                                  startIcon={<ApproveIcon />}
+                                  onClick={() => handleApprove(request.id, request.username)}
+                                  disabled={loading || processingId === request.id}
+                                >
+                                  Approve
+                                </Button>
+                              </span>
+                            </Tooltip>
+                            <Tooltip title="Reject">
+                              <span>
+                                <Button
+                                  variant="outlined"
+                                  color="error"
+                                  size="small"
+                                  startIcon={<RejectIcon />}
+                                  onClick={() => handleReject(request.id, request.username)}
+                                  disabled={loading || processingId === request.id}
+                                >
+                                  Reject
+                                </Button>
+                              </span>
+                            </Tooltip>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -243,16 +285,19 @@ function AdminDashboard() {
         </CardContent>
       </Card>
       
-      {/* Refresh button */}
-      <Box sx={{ mt: 2 }}>
-        <Button 
-          variant="outlined" 
-          onClick={loadPendingRequests}
-          disabled={loading}
-        >
-          Refresh List
-        </Button>
-      </Box>
+      {/* Refresh button at bottom */}
+      {pendingRequests.length > 0 && (
+        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+          <Button 
+            variant="outlined" 
+            startIcon={<RefreshIcon />}
+            onClick={loadPendingRequests}
+            disabled={loading}
+          >
+            Refresh List
+          </Button>
+        </Box>
+      )}
     </Container>
   );
 }

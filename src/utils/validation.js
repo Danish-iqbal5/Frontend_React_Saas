@@ -229,6 +229,112 @@ export const validateUserType = (userType) => {
 };
 
 /**
+ * Wholesale price validation utility
+ * @param {string|number} price - Wholesale price to validate
+ * @returns {string} - Error message or empty string if valid
+ */
+export const validateWholesalePrice = (price) => {
+  if (!price && price !== 0) {
+    return 'Wholesale price is required';
+  }
+  
+  const numPrice = parseFloat(price);
+  
+  if (isNaN(numPrice)) {
+    return 'Wholesale price must be a valid number';
+  }
+  
+  if (numPrice < 0) {
+    return 'Wholesale price cannot be negative';
+  }
+  
+  if (numPrice > 999999.99) {
+    return 'Wholesale price is too high';
+  }
+  
+  // Check for valid decimal places (max 2)
+  const priceStr = price.toString();
+  if (priceStr.includes('.') && priceStr.split('.')[1].length > 2) {
+    return 'Wholesale price can have maximum 2 decimal places';
+  }
+  
+  return '';
+};
+
+/**
+ * Retail price validation utility
+ * @param {string|number} retailPrice - Retail price to validate
+ * @param {string|number} wholesalePrice - Wholesale price for comparison
+ * @returns {string} - Error message or empty string if valid
+ */
+export const validateRetailPrice = (retailPrice, wholesalePrice = null) => {
+  if (!retailPrice && retailPrice !== 0) {
+    return 'Retail price is required';
+  }
+  
+  const numRetailPrice = parseFloat(retailPrice);
+  
+  if (isNaN(numRetailPrice)) {
+    return 'Retail price must be a valid number';
+  }
+  
+  if (numRetailPrice < 0) {
+    return 'Retail price cannot be negative';
+  }
+  
+  if (numRetailPrice > 999999.99) {
+    return 'Retail price is too high';
+  }
+  
+  // Check for valid decimal places (max 2)
+  const priceStr = retailPrice.toString();
+  if (priceStr.includes('.') && priceStr.split('.')[1].length > 2) {
+    return 'Retail price can have maximum 2 decimal places';
+  }
+  
+  // Check if retail price is greater than or equal to wholesale price
+  if (wholesalePrice !== null) {
+    const numWholesalePrice = parseFloat(wholesalePrice);
+    if (!isNaN(numWholesalePrice) && numRetailPrice < numWholesalePrice) {
+      return 'Retail price must be greater than or equal to wholesale price';
+    }
+  }
+  
+  return '';
+};
+
+/**
+ * Stock quantity validation utility
+ * @param {string|number} stockQuantity - Stock quantity to validate
+ * @returns {string} - Error message or empty string if valid
+ */
+export const validateStockQuantity = (stockQuantity) => {
+  if (!stockQuantity && stockQuantity !== 0) {
+    return 'Stock quantity is required';
+  }
+  
+  const numQuantity = parseInt(stockQuantity);
+  
+  if (isNaN(numQuantity)) {
+    return 'Stock quantity must be a valid number';
+  }
+  
+  if (numQuantity < 0) {
+    return 'Stock quantity cannot be negative';
+  }
+  
+  if (numQuantity > 999999) {
+    return 'Stock quantity is too high';
+  }
+  
+  if (!Number.isInteger(numQuantity)) {
+    return 'Stock quantity must be a whole number';
+  }
+  
+  return '';
+};
+
+/**
  * Debounce function for validation
  * @param {function} func - Function to debounce
  * @param {number} wait - Wait time in milliseconds

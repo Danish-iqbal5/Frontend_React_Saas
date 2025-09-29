@@ -34,7 +34,7 @@ function Homepage() {
 
   useEffect(() => {
     const checkUserStatus = () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('tokens');
       const role = localStorage.getItem('role');
       const email = localStorage.getItem('email');
       

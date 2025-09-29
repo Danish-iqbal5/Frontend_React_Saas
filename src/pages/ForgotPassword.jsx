@@ -24,7 +24,7 @@ export default function ForgotPassword() {
     try {
       await api.post('/api/forgot-password/', { email });
       setMessage(
-        'If an account exists, an OTP was sent to the email. Use Reset Password to set new password.'
+        'OTP was sent to the email. Use Reset Password to set new password.'
       );
     } catch (err) {
       setMessage('Failed to request forgot password');

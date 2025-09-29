@@ -46,13 +46,13 @@ const handleResend = async () => {
 setLoading(true)
 setMessage('')
 try{
-await api.post('/resend-otp/', { email })
+await api.post('/api/resend-otp/', { email })
 setMessage('OTP resent.')
 } catch (err){ setMessage('Failed to resend OTP') }
 finally{ setLoading(false) }
 }
 
-
+    
 return (
 <div className="card">
 <h2>Verify OTP</h2>

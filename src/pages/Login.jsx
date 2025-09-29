@@ -39,7 +39,7 @@ const Login = () => {
   
   // Hooks
   const { login } = useAuth();
-  const navigate = useNavigate();
+  
 
   // Clear message after 5 seconds
   useEffect(() => {

@@ -256,8 +256,10 @@ const Products = () => {
   // Product card component
   const ProductCard = useCallback(({ product }) => {
     const isAddingToCart = addingToCart.has(product.id);
-    const isOutOfStock = product.quantity <= 0;
-    const price = parseFloat(product.price || 0);
+    const stock = product.stock_quantity ?? product.quantity ?? 0;
+    const isOutOfStock = stock <= 0;
+    const price = parseFloat(product.retail_price || product.price || 0);
+    const wholesalePrice = parseFloat(product.whole_sale_price || product.wholesale_price || 0);
     
     return (
       <Card
@@ -305,14 +307,21 @@ const Products = () => {
           </Typography>
           
           {/* Price */}
-          <Typography variant="h5" color="primary" sx={{ mb: 1, fontWeight: 'bold' }}>
-            ${price.toFixed(2)}
-          </Typography>
+          <Box sx={{ mb: 1 }}>
+            <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
+              ${price.toFixed(2)}
+            </Typography>
+            {wholesalePrice > 0 && (
+              <Typography variant="body2" color="text.secondary">
+                Wholesale: ${wholesalePrice.toFixed(2)}
+              </Typography>
+            )}
+          </Box>
           
           {/* Chips for stock and vendor */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip
-              label={`Stock: ${product.stock_quantity || 0}`}
+              label={`Stock: ${stock}`}
               size="small"
               color={isOutOfStock ? 'error' : 'success'}
               variant="outlined"

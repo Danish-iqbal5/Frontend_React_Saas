@@ -5,6 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 
 import theme from './theme';
+import Navigation from './components/Navigation';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
@@ -27,9 +28,9 @@ export default function App() {
           bgcolor: 'background.default',
           color: 'text.primary',
           minHeight: '100vh',
-          padding: 2,
         }}
       >
+        <Navigation />
         <main>
           <Routes>
             {/* Public routes - accessible to all */}

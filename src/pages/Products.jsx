@@ -134,15 +134,21 @@ const Products = () => {
     
     // Stock filter
     if (filterBy === 'in-stock') {
-      filtered = filtered.filter(product => product.quantity > 0);
+      filtered = filtered.filter(product => {
+        const stock = product.stock_quantity ?? product.quantity ?? 0;
+        return stock > 0;
+      });
     } else if (filterBy === 'out-of-stock') {
-      filtered = filtered.filter(product => product.quantity === 0);
+      filtered = filtered.filter(product => {
+        const stock = product.stock_quantity ?? product.quantity ?? 0;
+        return stock === 0;
+      });
     }
     
     // Price range filter
     if (priceRange.min !== '' || priceRange.max !== '') {
       filtered = filtered.filter(product => {
-        const price = parseFloat(product.price || 0);
+        const price = parseFloat(product.retail_price || product.price || 0);
         const min = parseFloat(priceRange.min) || 0;
         const max = parseFloat(priceRange.max) || Infinity;
         return price >= min && price <= max;
@@ -155,11 +161,11 @@ const Products = () => {
         case 'name':
           return (a.name || '').localeCompare(b.name || '');
         case 'price-low':
-          return parseFloat(a.price || 0) - parseFloat(b.price || 0);
+          return parseFloat(a.retail_price || a.price || 0) - parseFloat(b.retail_price || b.price || 0);
         case 'price-high':
-          return parseFloat(b.price || 0) - parseFloat(a.price || 0);
+          return parseFloat(b.retail_price || b.price || 0) - parseFloat(a.retail_price || a.price || 0);
         case 'stock':
-          return parseInt(b.quantity || 0) - parseInt(a.quantity || 0);
+          return parseInt(b.stock_quantity ?? b.quantity ?? 0) - parseInt(a.stock_quantity ?? a.quantity ?? 0);
         default:
           return 0;
       }
@@ -216,7 +222,8 @@ const Products = () => {
     }
     
     // Check stock
-    if (product.quantity <= 0) {
+    const stock = product.stock_quantity ?? product.quantity ?? 0;
+    if (stock <= 0) {
       setError('This product is out of stock');
       return;
     }

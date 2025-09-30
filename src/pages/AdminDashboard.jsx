@@ -146,20 +146,11 @@ function AdminDashboard() {
   }, [logout]);
   
   return (
-    <Container sx={{ mt: 4, mb: 4 }}>
+    <Container sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Admin Dashboard
-        </Typography>
-        <Button 
-          variant="outlined" 
-          color="error"
-          onClick={handleLogout}
-        >
-          Logout
-        </Button>
-      </Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Admin Dashboard
+      </Typography>
 
       <Typography variant="h6" gutterBottom color="text.secondary">
         Pending Approvals

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminAPI, handleAPIError } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { confirmAction } from '../utils/confirm';
 import {
   Container,
   Card,
@@ -84,7 +85,7 @@ function AdminDashboard() {
    * Handle user approval
    */
   const handleApprove = useCallback(async (userId, username) => {
-    if (!window.confirm(`Are you sure you want to approve ${username}?`)) {
+    if (!confirmAction(`Are you sure you want to approve ${username}?`)) {
       return;
     }
 
@@ -113,7 +114,7 @@ function AdminDashboard() {
    * Handle user rejection
    */
   const handleReject = useCallback(async (userId, username) => {
-    if (!window.confirm(`Are you sure you want to reject ${username}?`)) {
+    if (!confirmAction(`Are you sure you want to reject ${username}?`)) {
       return;
     }
 

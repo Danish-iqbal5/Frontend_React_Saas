@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cartAPI, handleAPIError } from '../services/api';
+import { getCartId, getCartItemId, getProductIdFromItem } from '../utils/identifiers';
+import { lineTotal, computeTotals } from '../utils/pricing';
 import {
   Container,
   Typography,
@@ -46,6 +48,7 @@ const Cart = () => {
   const [success, setSuccess] = useState('');
   const [updatingItems, setUpdatingItems] = useState(new Set());
   const [cartId, setCartId] = useState(null);
+  const [cartSummary, setCartSummary] = useState({ totalPrice: '0.00', totalItems: 0 });
 
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
@@ -93,19 +96,29 @@ const Cart = () => {
       setError('');
       const response = await cartAPI.getCart();
       const data = response.data;
+      console.log(data);
       
       // Handle different response formats
-      if (data.cart_id) {
-        setCartId(data.cart_id);
-      } else if (data.id) {
-        setCartId(data.id);
-      }
+      setCartId(getCartId(data));
       
       const items = Array.isArray(data) ? data : 
                    data.items ? data.items : 
                    data.cart_items ? data.cart_items : [];
       
       setCartItems(items);
+
+      // Capture backend-calculated totals when provided
+      if (!Array.isArray(data)) {
+        const backendTotalPrice = typeof data.total_price !== 'undefined' ? String(data.total_price) : null;
+        const backendTotalItems = typeof data.total_items !== 'undefined' ? parseInt(data.total_items) : null;
+
+        if (backendTotalPrice !== null || backendTotalItems !== null) {
+          setCartSummary({
+            totalPrice: backendTotalPrice !== null ? String(backendTotalPrice) : '0.00',
+            totalItems: backendTotalItems !== null ? backendTotalItems : 0,
+          });
+        }
+      }
     } catch (err) {
       const errorInfo = handleAPIError(err);
       if (err.response?.status === 401) {
@@ -126,17 +139,19 @@ const Cart = () => {
     }
 
     // Check if we have enough stock
-    const maxStock = item.product?.stock_quantity || item.stock_quantity || 0;
+    const maxStock = item.stock_available || item.product?.stock_quantity || item.stock_quantity || 0;
     if (newQuantity > maxStock) {
       setError(`Only ${maxStock} items available in stock`);
       return;
     }
 
-    const itemId = item.id || item.cart_item_id;
-    const productId = extractProductId(item);
+    const itemId = getCartItemId(item);
+    const productId = getProductIdFromItem(item);
     const currentCartId = cartId || item.cart_id;
 
-    if (!productId) {
+    // Proceed if either productId or cart_item_id is available
+    const hasIdentifier = Boolean(productId) || Boolean(itemId);
+    if (!hasIdentifier) {
       setError('Missing product identifier for this cart item. Please refresh the cart.');
       return;
     }
@@ -145,7 +160,7 @@ const Cart = () => {
     setError('');
 
     try {
-      await cartAPI.updateCartItem(productId, newQuantity, itemId);
+      await cartAPI.updateCartItem(productId || null, newQuantity, itemId || null);
       
       // Update local state
       setCartItems(prevItems =>
@@ -171,7 +186,7 @@ const Cart = () => {
   }, [cartId, loadCart]);
 
   const handleQuantityChange = useCallback((item, delta) => {
-    const currentQty = item.quantity || 1;
+    const currentQty = parseInt(item.quantity || 1);
     const newQty = currentQty + delta;
     updateQuantity(item, newQty);
   }, [updateQuantity]);
@@ -195,8 +210,8 @@ const Cart = () => {
     const item = deleteDialog.item;
     if (!item) return;
 
-    const itemId = item.id || item.cart_item_id;
-    const productId = extractProductId(item);
+    const itemId = getCartItemId(item);
+    const productId = getProductIdFromItem(item);
     const currentCartId = cartId || item.cart_id;
     const quantity = item.quantity || 1;
     const itemName = item.product_name || item.product?.name || 'Item';
@@ -231,25 +246,8 @@ const Cart = () => {
   }, [deleteDialog, cartId, loadCart, hideDeleteConfirmation]);
 
   const calculateTotals = useCallback(() => {
-    const validItems = Array.isArray(cartItems) ? cartItems : [];
-
-    const subtotal = validItems.reduce((total, item) => {
-      const price = parseFloat(item.price || item.product?.retail_price || item.product?.price || 0);
-      const quantity = parseInt(item.quantity || 0);
-      return total + (price * quantity);
-    }, 0);
-
-    const itemCount = validItems.reduce((count, item) => {
-      return count + parseInt(item.quantity || 0);
-    }, 0);
-
-    return {
-      subtotal: subtotal.toFixed(2),
-      itemCount,
-      tax: (subtotal * 0.1).toFixed(2),
-      total: (subtotal * 1.1).toFixed(2),
-    };
-  }, [cartItems]);
+    return computeTotals(cartItems, { totalPrice: cartSummary.totalPrice, totalItems: cartSummary.totalItems });
+  }, [cartItems, cartSummary]);
 
   const totals = calculateTotals();
 
@@ -332,13 +330,13 @@ const Cart = () => {
                     </TableHead>
                     <TableBody>
                       {cartItems.map((item) => {
-                        const itemId = item.id || item.cart_item_id;
+                        const itemId = getCartItemId(item);
                         const productName = item.product_name || item.product?.name || 'Unknown Product';
-                        const price = parseFloat(item.price || item.product?.retail_price || item.product?.price || 0);
+                        const price = parseFloat(item.unit_price || 0);
                         const quantity = parseInt(item.quantity || 0);
-                        const subtotal = price * quantity;
+                        const subtotal = lineTotal(item);
                         const isUpdating = updatingItems.has(itemId);
-                        const maxStock = item.product?.stock_quantity || item.stock_quantity || 999;
+                        const maxStock = item.stock_available || item.product?.stock_quantity || item.stock_quantity || 999;
 
                         return (
                           <TableRow 

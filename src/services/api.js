@@ -1,8 +1,39 @@
 import axios from 'axios';
 
+// Centralized API route fragments for reuse and clarity
+export const API_ROUTES = {
+  baseURL: 'http://localhost:8000/',
+  auth: {
+    register: '/api/register/',
+    verifyOtp: '/api/verify-otp/',
+    resendOtp: '/api/resend-otp/',
+    login: '/api/login/',
+    refresh: '/api/refresh/',
+    logout: '/api/logout/',
+    forgotPassword: '/api/forgot-password/',
+    resetPassword: '/api/reset-password/',
+    setPassword: (userId) => `/api/set-password/${userId}/`,
+  },
+  products: {
+    list: '/Products/products/',
+    vendorList: '/Products/vendor/products/',
+    vendorItem: (id) => `/Products/vendor/products/${id}/`,
+    vendorDetails: (id) => `/Products/vendor/${id}/`,
+  },
+  cart: {
+    root: '/Products/cart/',
+    manage: '/Products/manage-cart-products/',
+    clear: '/Products/cart/clear/',
+  },
+  admin: {
+    dashboard: '/api/admin-dashboard/',
+    decision: '/admin-dashboard/',
+  },
+};
+
 // Base API configuration
 const api = axios.create({
-  baseURL: 'http://localhost:8000/',
+  baseURL: API_ROUTES.baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -121,7 +152,7 @@ api.interceptors.response.use(
     try {
       // Try to refresh the token
       const refreshResponse = await axios.post(
-        'http://localhost:8000/api/refresh/',
+        `${API_ROUTES.baseURL}${API_ROUTES.auth.refresh}`,
         { refresh: tokens.refresh }
       );
 
@@ -165,31 +196,31 @@ api.interceptors.response.use(
  */
 export const authAPI = {
   // User registration
-  register: (userData) => api.post('/api/register/', userData),
+  register: (userData) => api.post(API_ROUTES.auth.register, userData),
 
   // OTP verification
-  verifyOTP: (otpData) => api.post('/api/verify-otp/', otpData),
+  verifyOTP: (otpData) => api.post(API_ROUTES.auth.verifyOtp, otpData),
 
   // Resend OTP
-  resendOTP: (email) => api.post('/api/resend-otp/', { email }),
+  resendOTP: (email) => api.post(API_ROUTES.auth.resendOtp, { email }),
 
   // User login
-  login: (credentials) => api.post('/api/login/', credentials),
+  login: (credentials) => api.post(API_ROUTES.auth.login, credentials),
 
   // Token refresh
-  refreshToken: (refreshToken) => api.post('/api/refresh/', { refresh: refreshToken }),
+  refreshToken: (refreshToken) => api.post(API_ROUTES.auth.refresh, { refresh: refreshToken }),
 
   // User logout
-  logout: () => api.post('/api/logout/'),
+  logout: () => api.post(API_ROUTES.auth.logout),
 
   // Password reset request
-  forgotPassword: (email) => api.post('/api/forgot-password/', { email }),
+  forgotPassword: (email) => api.post(API_ROUTES.auth.forgotPassword, { email }),
 
   // Password reset
-  resetPassword: (resetData) => api.post('/api/reset-password/', resetData),
+  resetPassword: (resetData) => api.post(API_ROUTES.auth.resetPassword, resetData),
 
   // Set password
-  setPassword: (userId, passwordData) => api.post(`/api/set-password/${userId}/`, passwordData),
+  setPassword: (userId, passwordData) => api.post(API_ROUTES.auth.setPassword(userId), passwordData),
 };
 
 /**
@@ -197,23 +228,23 @@ export const authAPI = {
  */
 export const productsAPI = {
   // Get all products
-  getProducts: () => api.get('/Products/products/'),
+  getProducts: () => api.get(API_ROUTES.products.list),
 
   // Get vendor products
-  getVendorProducts: () => api.get('/Products/vendor/products/'),
+  getVendorProducts: () => api.get(API_ROUTES.products.vendorList),
 
   // Create product (vendor)
-  createProduct: (productData) => api.post('/Products/vendor/products/', productData),
+  createProduct: (productData) => api.post(API_ROUTES.products.vendorList, productData),
 
   // Update product (vendor)
   updateProduct: (productId, productData) =>
-    api.put(`/Products/vendor/products/${productId}/`, productData),
+    api.put(API_ROUTES.products.vendorItem(productId), productData),
 
   // Delete product (vendor)
-  deleteProduct: (productId) => api.delete(`/Products/vendor/products/${productId}/`),
+  deleteProduct: (productId) => api.delete(API_ROUTES.products.vendorItem(productId)),
 
   // Get product details
-  getProductDetails: (productId) => api.get(`/Products/vendor/${productId}/`),
+  getProductDetails: (productId) => api.get(API_ROUTES.products.vendorDetails(productId)),
 };
 
 /**
@@ -221,23 +252,23 @@ export const productsAPI = {
  */
 export const cartAPI = {
   // Get cart items
-  getCart: () => api.get('/Products/cart/'),
+  getCart: () => api.get(API_ROUTES.cart.root),
 
   // Add to cart
-  addToCart: (cartData) => api.post('/Products/cart/', cartData),
+  addToCart: (cartData) => api.post(API_ROUTES.cart.root, cartData),
 
   // Update cart item quantity
   updateCartItem: (productId, quantity, cartItemId) =>
-    api.put('/Products/manage-cart-products/', {
-      product_id: productId,
-      quantity: quantity,
-      // Provide cart_item_id for backends that support it
+    api.put(API_ROUTES.cart.manage, {
+      // Include only identifiers that are present
+      ...(productId ? { product_id: productId } : {}),
       ...(cartItemId ? { cart_item_id: cartItemId } : {}),
+      quantity: quantity,
     }),
 
   // Remove from cart (restores stock)
   removeFromCart: (productId, cartItemId) =>
-    api.delete('/Products/manage-cart-products/', {
+    api.delete(API_ROUTES.cart.manage, {
       // Send both query param and body to satisfy servers that ignore DELETE bodies
       params: { product_id: productId, ...(cartItemId ? { cart_item_id: cartItemId } : {}) },
       data: { product_id: productId, ...(cartItemId ? { cart_item_id: cartItemId } : {}) },
@@ -246,7 +277,7 @@ export const cartAPI = {
 
 
   // Clear cart
-  clearCart: () => api.delete('/Products/cart/clear/'),
+  clearCart: () => api.delete(API_ROUTES.cart.clear),
 };
 
 /**
@@ -254,10 +285,11 @@ export const cartAPI = {
  */
 export const adminAPI = {
   // Get admin dashboard data
-  getDashboardData: () => api.get('/api/admin-dashboard/'),
+  getDashboardData: () => api.get(API_ROUTES.admin.dashboard),
 
   // Approve/reject user
-  updateUserStatus: (userId, action) => api.post('/api/admin-dashboard/', { user_id: userId, action }),
+  updateUserStatus: (userId, action, rejectionReason = '') =>
+    api.post(API_ROUTES.admin.decision, { id: userId, action, rejection_reason: rejectionReason }),
 };
 
 /**

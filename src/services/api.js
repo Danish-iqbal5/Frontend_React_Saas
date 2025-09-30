@@ -1,11 +1,10 @@
-// services/api.js
 import axios from 'axios';
 
 // Base API configuration
 const api = axios.create({
   baseURL: 'http://localhost:8000/',
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 second timeout
 });
@@ -18,14 +17,14 @@ let failedQueue = [];
  * Process queued requests after token refresh
  */
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
       prom.resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -98,11 +97,11 @@ api.interceptors.response.use(
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       })
-        .then(token => {
+        .then((token) => {
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return api(originalRequest);
         })
-        .catch(err => {
+        .catch((err) => {
           return Promise.reject(err);
         });
     }
@@ -111,7 +110,7 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     const tokens = getTokens();
-    
+
     // If no refresh token available, logout
     if (!tokens || !tokens.refresh) {
       clearAuthData();
@@ -127,11 +126,11 @@ api.interceptors.response.use(
       );
 
       const newAccessToken = refreshResponse.data.access;
-      
+
       // Save new token
       const newTokens = {
         ...tokens,
-        access: newAccessToken
+        access: newAccessToken,
       };
       saveTokens(newTokens);
 
@@ -146,14 +145,14 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError) {
       console.error('Token refresh failed:', refreshError);
-      
+
       // Process queue with error
       processQueue(refreshError, null);
-      
+
       // Clear auth data and redirect to login
       clearAuthData();
       window.location.href = '/login';
-      
+
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
@@ -167,28 +166,28 @@ api.interceptors.response.use(
 export const authAPI = {
   // User registration
   register: (userData) => api.post('/api/register/', userData),
-  
+
   // OTP verification
   verifyOTP: (otpData) => api.post('/api/verify-otp/', otpData),
-  
+
   // Resend OTP
   resendOTP: (email) => api.post('/api/resend-otp/', { email }),
-  
+
   // User login
   login: (credentials) => api.post('/api/login/', credentials),
-  
+
   // Token refresh
   refreshToken: (refreshToken) => api.post('/api/refresh/', { refresh: refreshToken }),
-  
+
   // User logout
   logout: () => api.post('/api/logout/'),
-  
+
   // Password reset request
   forgotPassword: (email) => api.post('/api/forgot-password/', { email }),
-  
+
   // Password reset
   resetPassword: (resetData) => api.post('/api/reset-password/', resetData),
-  
+
   // Set password
   setPassword: (userId, passwordData) => api.post(`/api/set-password/${userId}/`, passwordData),
 };
@@ -199,19 +198,20 @@ export const authAPI = {
 export const productsAPI = {
   // Get all products
   getProducts: () => api.get('/Products/products/'),
-  
+
   // Get vendor products
   getVendorProducts: () => api.get('/Products/vendor/products/'),
-  
+
   // Create product (vendor)
   createProduct: (productData) => api.post('/Products/vendor/products/', productData),
-  
+
   // Update product (vendor)
-  updateProduct: (productId, productData) => api.put(`/Products/vendor/products/${productId}/`, productData),
-  
+  updateProduct: (productId, productData) =>
+    api.put(`/Products/vendor/products/${productId}/`, productData),
+
   // Delete product (vendor)
   deleteProduct: (productId) => api.delete(`/Products/vendor/products/${productId}/`),
-  
+
   // Get product details
   getProductDetails: (productId) => api.get(`/Products/vendor/${productId}/`),
 };
@@ -222,16 +222,29 @@ export const productsAPI = {
 export const cartAPI = {
   // Get cart items
   getCart: () => api.get('/Products/cart/'),
-  
+
   // Add to cart
   addToCart: (cartData) => api.post('/Products/cart/', cartData),
-  
-  // Update cart item
-  updateCartItem: (itemId, quantity) => api.put(`/Products/cart/${itemId}/`, { quantity }),
-  
-  // Remove from cart
-  removeFromCart: (itemId) => api.delete(`/Products/cart/${itemId}/`),
-  
+
+  // Update cart item quantity
+  updateCartItem: (productId, quantity, cartItemId) =>
+    api.put('/Products/manage-cart-products/', {
+      product_id: productId,
+      quantity: quantity,
+      // Provide cart_item_id for backends that support it
+      ...(cartItemId ? { cart_item_id: cartItemId } : {}),
+    }),
+
+  // Remove from cart (restores stock)
+  removeFromCart: (productId, cartItemId) =>
+    api.delete('/Products/manage-cart-products/', {
+      // Send both query param and body to satisfy servers that ignore DELETE bodies
+      params: { product_id: productId, ...(cartItemId ? { cart_item_id: cartItemId } : {}) },
+      data: { product_id: productId, ...(cartItemId ? { cart_item_id: cartItemId } : {}) },
+    }),
+    
+
+
   // Clear cart
   clearCart: () => api.delete('/Products/cart/clear/'),
 };
@@ -242,7 +255,7 @@ export const cartAPI = {
 export const adminAPI = {
   // Get admin dashboard data
   getDashboardData: () => api.get('/api/admin-dashboard/'),
-  
+
   // Approve/reject user
   updateUserStatus: (userId, action) => api.post('/api/admin-dashboard/', { user_id: userId, action }),
 };
@@ -254,52 +267,52 @@ export const handleAPIError = (error) => {
   if (error.response) {
     // Server responded with error status
     const { status, data } = error.response;
-    
+
     switch (status) {
       case 400:
-        return { 
-          message: data.error || data.message || 'Invalid request. Please check your input.', 
+        return {
+          message: data.error || data.message || 'Invalid request. Please check your input.',
           type: 'error',
-          details: data
+          details: data,
         };
       case 401:
-        return { 
-          message: 'Unauthorized access. Please login again.', 
-          type: 'error' 
+        return {
+          message: 'Unauthorized access. Please login again.',
+          type: 'error',
         };
       case 403:
-        return { 
-          message: 'Access denied. You don\'t have permission to perform this action.', 
-          type: 'error' 
+        return {
+          message: "Access denied. You don't have permission to perform this action.",
+          type: 'error',
         };
       case 404:
-        return { 
-          message: 'Resource not found.', 
-          type: 'error' 
+        return {
+          message: 'Resource not found.',
+          type: 'error',
         };
       case 500:
-        return { 
-          message: 'Server error. Please try again later.', 
-          type: 'error' 
+        return {
+          message: 'Server error. Please try again later.',
+          type: 'error',
         };
       default:
-        return { 
-          message: data.error || data.message || 'An error occurred', 
+        return {
+          message: data.error || data.message || 'An error occurred',
           type: 'error',
-          details: data
+          details: data,
         };
     }
   } else if (error.request) {
     // Network error - request was made but no response
-    return { 
-      message: 'Network error. Please check your internet connection.', 
-      type: 'error' 
+    return {
+      message: 'Network error. Please check your internet connection.',
+      type: 'error',
     };
   } else {
     // Other error
-    return { 
-      message: error.message || 'An unexpected error occurred', 
-      type: 'error' 
+    return {
+      message: error.message || 'An unexpected error occurred',
+      type: 'error',
     };
   }
 };
@@ -309,7 +322,7 @@ export const handleAPIError = (error) => {
  */
 export const createSuccessMessage = (message) => ({
   message,
-  type: 'success'
+  type: 'success',
 });
 
 /**

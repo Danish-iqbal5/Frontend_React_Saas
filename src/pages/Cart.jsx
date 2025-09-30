@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cartAPI, handleAPIError } from '../services/api';
-import { validateQuantity } from '../utils/validation';
 import {
   Container,
   Typography,
@@ -29,6 +28,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Grid,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -36,6 +36,7 @@ import {
   Delete as DeleteIcon,
   ShoppingCart as ShoppingCartIcon,
   ShoppingBag as ShoppingBagIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 
 const Cart = () => {
@@ -44,14 +45,27 @@ const Cart = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [updatingItems, setUpdatingItems] = useState(new Set());
+  const [cartId, setCartId] = useState(null);
 
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
-    itemId: null,
-    itemName: '',
+    item: null,
   });
 
   const navigate = useNavigate();
+
+  // Try to extract a product identifier from various backend shapes
+  const extractProductId = useCallback((item) => {
+    return (
+      item?.product_id ||
+      item?.productId ||
+      item?.product?.id ||
+      item?.product?.product_id ||
+      item?.product_uuid ||
+      item?.product?.uuid ||
+      null
+    );
+  }, []);
 
   useEffect(() => {
     const tokens = localStorage.getItem('tokens');
@@ -79,7 +93,19 @@ const Cart = () => {
       setError('');
       const response = await cartAPI.getCart();
       const data = response.data;
-      setCartItems(Array.isArray(data) ? data : []);
+      
+      // Handle different response formats
+      if (data.cart_id) {
+        setCartId(data.cart_id);
+      } else if (data.id) {
+        setCartId(data.id);
+      }
+      
+      const items = Array.isArray(data) ? data : 
+                   data.items ? data.items : 
+                   data.cart_items ? data.cart_items : [];
+      
+      setCartItems(items);
     } catch (err) {
       const errorInfo = handleAPIError(err);
       if (err.response?.status === 401) {
@@ -93,14 +119,25 @@ const Cart = () => {
     }
   }, [navigate]);
 
-  const validateQuantityInput = useCallback((quantity) => {
-    const error = validateQuantity(quantity);
-    return !error && quantity > 0 && quantity <= 999;
-  }, []);
+  const updateQuantity = useCallback(async (item, newQuantity) => {
+    if (newQuantity < 1 || newQuantity > 999) {
+      setError('Quantity must be between 1 and 999');
+      return;
+    }
 
-  const updateQuantity = useCallback(async (itemId, newQuantity, itemName = 'Item') => {
-    if (!validateQuantityInput(newQuantity)) {
-      setError('Please enter a valid quantity (1-999)');
+    // Check if we have enough stock
+    const maxStock = item.product?.stock_quantity || item.stock_quantity || 0;
+    if (newQuantity > maxStock) {
+      setError(`Only ${maxStock} items available in stock`);
+      return;
+    }
+
+    const itemId = item.id || item.cart_item_id;
+    const productId = extractProductId(item);
+    const currentCartId = cartId || item.cart_id;
+
+    if (!productId) {
+      setError('Missing product identifier for this cart item. Please refresh the cart.');
       return;
     }
 
@@ -108,17 +145,22 @@ const Cart = () => {
     setError('');
 
     try {
-      await cartAPI.updateCartItem(itemId, newQuantity);
+      await cartAPI.updateCartItem(productId, newQuantity, itemId);
+      
+      // Update local state
       setCartItems(prevItems =>
-        prevItems.map(item =>
-          item.id === itemId ? { ...item, quantity: newQuantity } : item
+        prevItems.map(cartItem =>
+          (cartItem.id || cartItem.cart_item_id) === itemId
+            ? { ...cartItem, quantity: newQuantity }
+            : cartItem
         )
       );
-      setSuccess(`Updated ${itemName} quantity`);
+      
+      setSuccess(`Updated quantity to ${newQuantity}`);
     } catch (err) {
       const errorInfo = handleAPIError(err);
-      setError(`Failed to update ${itemName}: ${errorInfo.message}`);
-      loadCart();
+      setError(`Failed to update quantity: ${errorInfo.message}`);
+      loadCart(); // Reload to get correct state
     } finally {
       setUpdatingItems(prev => {
         const newSet = new Set(prev);
@@ -126,42 +168,59 @@ const Cart = () => {
         return newSet;
       });
     }
-  }, [loadCart, validateQuantityInput]);
+  }, [cartId, loadCart]);
 
-  const handleQuantityChange = useCallback((itemId, value, itemName) => {
-    const quantity = parseInt(value);
-    if (isNaN(quantity) || quantity < 1) return;
-    if (quantity > 999) {
-      setError('Maximum quantity is 999');
-      return;
-    }
-    updateQuantity(itemId, quantity, itemName);
+  const handleQuantityChange = useCallback((item, delta) => {
+    const currentQty = item.quantity || 1;
+    const newQty = currentQty + delta;
+    updateQuantity(item, newQty);
   }, [updateQuantity]);
 
-  const showDeleteConfirmation = useCallback((itemId, itemName) => {
-    setDeleteDialog({ open: true, itemId, itemName });
+  const handleQuantityInput = useCallback((item, value) => {
+    const quantity = parseInt(value);
+    if (!isNaN(quantity) && quantity > 0) {
+      updateQuantity(item, quantity);
+    }
+  }, [updateQuantity]);
+
+  const showDeleteConfirmation = useCallback((item) => {
+    setDeleteDialog({ open: true, item });
   }, []);
 
   const hideDeleteConfirmation = useCallback(() => {
-    setDeleteDialog({ open: false, itemId: null, itemName: '' });
+    setDeleteDialog({ open: false, item: null });
   }, []);
 
   const removeFromCart = useCallback(async () => {
-    const { itemId, itemName } = deleteDialog;
-    if (!itemId) return;
+    const item = deleteDialog.item;
+    if (!item) return;
+
+    const itemId = item.id || item.cart_item_id;
+    const productId = extractProductId(item);
+    const currentCartId = cartId || item.cart_id;
+    const quantity = item.quantity || 1;
+    const itemName = item.product_name || item.product?.name || 'Item';
 
     setUpdatingItems(prev => new Set([...prev, itemId]));
     setError('');
     hideDeleteConfirmation();
 
     try {
-      await cartAPI.removeFromCart(itemId);
-      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+      // Call delete API to restore stock
+      await cartAPI.removeFromCart(productId, itemId);
+      
+      // Remove from local state
+      setCartItems(prevItems => 
+        prevItems.filter(cartItem => 
+          (cartItem.id || cartItem.cart_item_id) !== itemId
+        )
+      );
+      
       setSuccess(`Removed ${itemName} from cart`);
     } catch (err) {
       const errorInfo = handleAPIError(err);
       setError(`Failed to remove ${itemName}: ${errorInfo.message}`);
-      loadCart();
+      loadCart(); // Reload to get correct state
     } finally {
       setUpdatingItems(prev => {
         const newSet = new Set(prev);
@@ -169,13 +228,13 @@ const Cart = () => {
         return newSet;
       });
     }
-  }, [deleteDialog, loadCart, hideDeleteConfirmation]);
+  }, [deleteDialog, cartId, loadCart, hideDeleteConfirmation]);
 
   const calculateTotals = useCallback(() => {
     const validItems = Array.isArray(cartItems) ? cartItems : [];
 
     const subtotal = validItems.reduce((total, item) => {
-      const price = parseFloat(item.price || 0);
+      const price = parseFloat(item.price || item.product?.retail_price || item.product?.price || 0);
       const quantity = parseInt(item.quantity || 0);
       return total + (price * quantity);
     }, 0);
@@ -204,27 +263,38 @@ const Cart = () => {
 
   if (loading && (!Array.isArray(cartItems) || cartItems.length === 0)) {
     return (
-      <Container sx={{ mt: 4 }}>
+      <Container sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <CircularProgress size={50} />
+          <Typography sx={{ ml: 2 }}>Loading cart...</Typography>
         </Box>
       </Container>
     );
   }
 
   return (
-    <Container sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <ShoppingCartIcon />
-        Shopping Cart
-        {totals.itemCount > 0 && (
-          <Chip label={`${totals.itemCount} items`} color="primary" size="small" />
-        )}
-      </Typography>
+    <Container sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3 } }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ShoppingCartIcon />
+          Shopping Cart
+          {totals.itemCount > 0 && (
+            <Chip label={`${totals.itemCount} items`} color="primary" size="small" />
+          )}
+        </Typography>
+        <Tooltip title="Refresh cart">
+          <IconButton onClick={loadCart} disabled={loading} color="primary">
+            <RefreshIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
 
+      {/* Messages */}
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
+      {/* Empty Cart */}
       {Array.isArray(cartItems) && cartItems.length === 0 ? (
         <Card sx={{ textAlign: 'center', p: 4 }}>
           <CardContent>
@@ -233,30 +303,204 @@ const Cart = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Add some products to get started
             </Typography>
-            <Button variant="contained" size="large" onClick={() => navigate('/products')} startIcon={<ShoppingBagIcon />}>
+            <Button 
+              variant="contained" 
+              size="large" 
+              onClick={() => navigate('/products')} 
+              startIcon={<ShoppingBagIcon />}
+            >
               Browse Products
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <>
-          {/* Cart Table and Summary (no changes here, keep original from your code) */}
-          {/* ... */}
-          {/* Dialog for delete confirmation (same) */}
-          <Dialog open={deleteDialog.open} onClose={hideDeleteConfirmation}>
-            <DialogTitle>Remove Item from Cart</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                Are you sure you want to remove "{deleteDialog.itemName}" from your cart?
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={hideDeleteConfirmation} color="primary">Cancel</Button>
-              <Button onClick={removeFromCart} color="error" autoFocus>Remove</Button>
-            </DialogActions>
-          </Dialog>
-        </>
+        <Grid container spacing={3}>
+          {/* Cart Items */}
+          <Grid item xs={12} md={8}>
+            <Card>
+              <CardContent>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell><strong>Product</strong></TableCell>
+                        <TableCell align="right"><strong>Price</strong></TableCell>
+                        <TableCell align="center"><strong>Quantity</strong></TableCell>
+                        <TableCell align="right"><strong>Subtotal</strong></TableCell>
+                        <TableCell align="center"><strong>Actions</strong></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {cartItems.map((item) => {
+                        const itemId = item.id || item.cart_item_id;
+                        const productName = item.product_name || item.product?.name || 'Unknown Product';
+                        const price = parseFloat(item.price || item.product?.retail_price || item.product?.price || 0);
+                        const quantity = parseInt(item.quantity || 0);
+                        const subtotal = price * quantity;
+                        const isUpdating = updatingItems.has(itemId);
+                        const maxStock = item.product?.stock_quantity || item.stock_quantity || 999;
+
+                        return (
+                          <TableRow 
+                            key={itemId}
+                            sx={{ 
+                              opacity: isUpdating ? 0.6 : 1,
+                              '&:hover': { bgcolor: 'action.hover' }
+                            }}
+                          >
+                            <TableCell>
+                              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                                {productName}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Stock: {maxStock}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              ${price.toFixed(2)}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                <Tooltip title="Decrease quantity">
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleQuantityChange(item, -1)}
+                                      disabled={isUpdating || quantity <= 1}
+                                      color="primary"
+                                    >
+                                      <RemoveIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  value={quantity}
+                                  onChange={(e) => handleQuantityInput(item, e.target.value)}
+                                  disabled={isUpdating}
+                                  inputProps={{
+                                    min: 1,
+                                    max: maxStock,
+                                    style: { textAlign: 'center', width: '60px' }
+                                  }}
+                                />
+                                <Tooltip title="Increase quantity">
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleQuantityChange(item, 1)}
+                                      disabled={isUpdating || quantity >= maxStock}
+                                      color="primary"
+                                    >
+                                      <AddIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              </Box>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                ${subtotal.toFixed(2)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="Remove from cart">
+                                <IconButton
+                                  color="error"
+                                  size="small"
+                                  onClick={() => showDeleteConfirmation(item)}
+                                  disabled={isUpdating}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Order Summary */}
+          <Grid item xs={12} md={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  Order Summary
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body1">Items ({totals.itemCount})</Typography>
+                  <Typography variant="body1">${totals.subtotal}</Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body1">Tax (10%)</Typography>
+                  <Typography variant="body1">${totals.tax}</Typography>
+                </Box>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    Total
+                  </Typography>
+                  <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
+                    ${totals.total}
+                  </Typography>
+                </Box>
+                
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  onClick={handleCheckout}
+                  disabled={loading || cartItems.length === 0}
+                  sx={{ mb: 2 }}
+                >
+                  Proceed to Checkout
+                </Button>
+                
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => navigate('/products')}
+                >
+                  Continue Shopping
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onClose={hideDeleteConfirmation}>
+        <DialogTitle>Remove Item from Cart</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to remove "{deleteDialog.item?.product_name || deleteDialog.item?.product?.name || 'this item'}" from your cart?
+            <br />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              This will restore {deleteDialog.item?.quantity || 0} items to stock.
+            </Typography>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={hideDeleteConfirmation} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={removeFromCart} color="error" autoFocus>
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

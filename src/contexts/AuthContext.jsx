@@ -11,6 +11,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  
+  
   // Initialize auth state on app start
   useEffect(() => {
     initializeAuth();

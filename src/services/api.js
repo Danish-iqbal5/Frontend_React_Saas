@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Centralized API route fragments for reuse and clarity
 export const API_ROUTES = {
   baseURL: 'http://localhost:8000/',
   auth: {

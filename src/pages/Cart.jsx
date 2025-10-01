@@ -96,7 +96,6 @@ const Cart = () => {
       setError('');
       const response = await cartAPI.getCart();
       const data = response.data;
-      console.log(data);
       
       // Handle different response formats
       setCartId(getCartId(data));
@@ -170,6 +169,9 @@ const Cart = () => {
             : cartItem
         )
       );
+
+      // Refresh cart to get updated backend totals
+      await loadCart();
       
       setSuccess(`Updated quantity to ${newQuantity}`);
     } catch (err) {

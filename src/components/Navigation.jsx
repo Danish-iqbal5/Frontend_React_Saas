@@ -90,7 +90,7 @@ const Navigation = () => {
               display: { xs: 'none', sm: 'block' }
             }}
           >
-            MyStore
+            Dnx Store
           </Typography>
         </Box>
 

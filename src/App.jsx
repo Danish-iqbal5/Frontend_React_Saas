@@ -10,6 +10,7 @@ import Signup from './pages/Signup';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import SetPassword from './pages/SetPassword';
 import AdminDashboard from './pages/AdminDashboard';
 import VendorDashboard from './pages/VendorDashboard';
 import PrivateRoute from './components/PrivateRoute';
@@ -74,6 +75,14 @@ export default function App() {
               element={
                 <PublicRoute>
                   <ResetPassword />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/set-password/:userId" 
+              element={
+                <PublicRoute>
+                  <SetPassword />
                 </PublicRoute>
               } 
             />

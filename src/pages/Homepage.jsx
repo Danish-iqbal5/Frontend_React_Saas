@@ -24,6 +24,29 @@ function Homepage() {
   const isLoggedIn = isAuthenticated();
   const userRole = getUserRole();
 
+  // Content data (kept identical, just structured for readability)
+  const featureCards = [
+    {
+      title: 'Quality Products',
+      description: 'Browse through our collection of high-quality products from verified vendors.',
+    },
+    {
+      title: 'Secure Shopping',
+      description: 'Shop with confidence. All transactions are secure and protected.',
+    },
+    {
+      title: 'Fast Delivery',
+      description: 'Get your products delivered quickly to your doorstep.',
+    },
+  ];
+
+  const whyChooseUs = [
+    { title: 'Verified Vendors', description: 'All our vendors are verified and trusted' },
+    { title: 'Best Prices', description: 'Competitive prices on all products' },
+    { title: '24/7 Support', description: 'Customer support available anytime' },
+    { title: 'Easy Returns', description: 'Hassle-free return policy' },
+  ];
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       {/* Main Content */}
@@ -43,44 +66,20 @@ function Homepage() {
 
         {/* Feature Cards */}
         <Grid container spacing={3} sx={{ mt: 4 }}>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
-              <CardContent>
-                <Typography variant="h5" gutterBottom color="primary" sx={{ fontWeight: 'bold' }}>
-                  Quality Products
-                </Typography>
-                <Typography variant="body1">
-                  Browse through our collection of high-quality products from verified vendors.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
-              <CardContent>
-                <Typography variant="h5" gutterBottom color="primary" sx={{ fontWeight: 'bold' }}>
-                  Secure Shopping
-                </Typography>
-                <Typography variant="body1">
-                  Shop with confidence. All transactions are secure and protected.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
-              <CardContent>
-                <Typography variant="h5" gutterBottom color="primary" sx={{ fontWeight: 'bold' }}>
-                  Fast Delivery
-                </Typography>
-                <Typography variant="body1">
-                  Get your products delivered quickly to your doorstep.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+          {featureCards.map((card) => (
+            <Grid key={card.title} item xs={12} md={4}>
+              <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
+                <CardContent>
+                  <Typography variant="h5" gutterBottom color="primary" sx={{ fontWeight: 'bold' }}>
+                    {card.title}
+                  </Typography>
+                  <Typography variant="body1">
+                    {card.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
         </Grid>
 
         {/* Call to Action */}
@@ -160,58 +159,21 @@ function Homepage() {
             Why Choose Us?
           </Typography>
           <Grid container spacing={4} sx={{ mt: 2 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h3" color="primary" gutterBottom>
-                  ✓
-                </Typography>
-                <Typography variant="h6" color="primary" gutterBottom sx={{ fontWeight: 'bold' }}>
-                  Verified Vendors
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  All our vendors are verified and trusted
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h3" color="primary" gutterBottom>
-                  ✓
-                </Typography>
-                <Typography variant="h6" color="primary" gutterBottom sx={{ fontWeight: 'bold' }}>
-                  Best Prices
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Competitive prices on all products
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h3" color="primary" gutterBottom>
-                  ✓
-                </Typography>
-                <Typography variant="h6" color="primary" gutterBottom sx={{ fontWeight: 'bold' }}>
-                  24/7 Support
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Customer support available anytime
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h3" color="primary" gutterBottom>
-                  ✓
-                </Typography>
-                <Typography variant="h6" color="primary" gutterBottom sx={{ fontWeight: 'bold' }}>
-                  Easy Returns
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Hassle-free return policy
-                </Typography>
-              </Box>
-            </Grid>
+            {whyChooseUs.map((item) => (
+              <Grid key={item.title} item xs={12} sm={6} md={3}>
+                <Box sx={{ textAlign: 'center', p: 2 }}>
+                  <Typography variant="h3" color="primary" gutterBottom>
+                    ✓
+                  </Typography>
+                  <Typography variant="h6" color="primary" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    {item.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {item.description}
+                  </Typography>
+                </Box>
+              </Grid>
+            ))}
           </Grid>
         </Box>
 

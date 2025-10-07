@@ -1,4 +1,4 @@
-// Price and totals helpers to keep Cart.jsx simple and readable
+
 
 export const parseMoney = (value) => {
   const num = parseFloat(value || 0);

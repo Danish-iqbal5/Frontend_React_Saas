@@ -1,4 +1,4 @@
-// Simple, reusable helpers to extract identifiers from varying backend shapes
+
 
 export const getCartId = (cartData) => {
   if (!cartData || typeof cartData !== 'object') return null;

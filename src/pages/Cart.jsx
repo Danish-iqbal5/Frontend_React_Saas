@@ -57,7 +57,7 @@ const Cart = () => {
 
   const navigate = useNavigate();
 
-  // Try to extract a product identifier from various backend shapes
+  
   const extractProductId = useCallback((item) => {
     return (
       item?.product_id ||
@@ -106,7 +106,7 @@ const Cart = () => {
       
       setCartItems(items);
 
-      // Capture backend-calculated totals when provided
+      
       if (!Array.isArray(data)) {
         const backendTotalPrice = typeof data.total_price !== 'undefined' ? String(data.total_price) : null;
         const backendTotalItems = typeof data.total_items !== 'undefined' ? parseInt(data.total_items) : null;
@@ -170,14 +170,14 @@ const Cart = () => {
         )
       );
 
-      // Refresh cart to get updated backend totals
+    
       await loadCart();
       
       setSuccess(`Updated quantity to ${newQuantity}`);
     } catch (err) {
       const errorInfo = handleAPIError(err);
       setError(`Failed to update quantity: ${errorInfo.message}`);
-      loadCart(); // Reload to get correct state
+      loadCart(); 
     } finally {
       setUpdatingItems(prev => {
         const newSet = new Set(prev);
@@ -223,12 +223,11 @@ const Cart = () => {
     hideDeleteConfirmation();
 
     try {
-      // Call delete API to restore stock
-      await cartAPI.removeFromCart(productId, itemId);
       
-      // Remove from local state
-      setCartItems(prevItems => 
-        prevItems.filter(cartItem => 
+      await cartAPI.removeFromCart(productId, itemId);
+
+      setCartItems(prevItems =>
+        prevItems.filter(cartItem =>
           (cartItem.id || cartItem.cart_item_id) !== itemId
         )
       );

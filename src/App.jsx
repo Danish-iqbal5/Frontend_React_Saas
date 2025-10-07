@@ -34,10 +34,10 @@ export default function App() {
         <Navigation />
         <main>
           <Routes>
-            {/* Public routes - accessible to all */}
+            
             <Route path="/" element={<Homepage />} />
             
-            {/* Auth routes - redirect to dashboard if already logged in */}
+            
             <Route 
               path="/signup" 
               element={
@@ -87,7 +87,7 @@ export default function App() {
               } 
             />
 
-            {/* Protected routes - require authentication */}
+            
             <Route
               path="/products"
               element={
@@ -105,7 +105,7 @@ export default function App() {
               }
             />
 
-            {/* Role-based protected routes */}
+          
             <Route
               path="/vendor"
               element={
@@ -123,7 +123,7 @@ export default function App() {
               }
             />
 
-            {/* 404 fallback - you can create a NotFound component later */}
+            
             <Route 
               path="*" 
               element={

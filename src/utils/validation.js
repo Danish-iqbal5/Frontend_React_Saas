@@ -1,10 +1,3 @@
-// utils/validation.js
-
-/**
- * Email validation utility
- * @param {string} email - Email to validate
- * @returns {string} - Error message or empty string if valid
- */
 export const validateEmail = (email) => {
   if (!email || !email.trim()) {
     return 'Email is required';
@@ -22,12 +15,7 @@ export const validateEmail = (email) => {
   return '';
 };
 
-/**
- * Password validation utility
- * @param {string} password - Password to validate
- * @param {boolean} isRequired - Whether password is required
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validatePassword = (password, isRequired = true) => {
   if (!password || !password.trim()) {
     return isRequired ? 'Password is required' : '';
@@ -41,7 +29,7 @@ export const validatePassword = (password, isRequired = true) => {
     return 'Password is too long';
   }
   
-  // Check for at least one uppercase, lowercase, number, and special character
+  
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
   const hasNumber = /\d/.test(password);
@@ -54,11 +42,6 @@ export const validatePassword = (password, isRequired = true) => {
   return '';
 };
 
-/**
- * Full name validation utility
- * @param {string} fullName - Full name to validate
- * @returns {string} - Error message or empty string if valid
- */
 export const validateFullName = (fullName) => {
   if (!fullName || !fullName.trim()) {
     return 'Full name is required';
@@ -72,7 +55,7 @@ export const validateFullName = (fullName) => {
     return 'Full name is too long';
   }
   
-  // Allow letters, spaces, hyphens, and apostrophes
+  
   const nameRegex = /^[a-zA-Z\s'-]+$/;
   if (!nameRegex.test(fullName.trim())) {
     return 'Full name can only contain letters, spaces, hyphens, and apostrophes';
@@ -81,11 +64,6 @@ export const validateFullName = (fullName) => {
   return '';
 };
 
-/**
- * Product name validation utility
- * @param {string} productName - Product name to validate
- * @returns {string} - Error message or empty string if valid
- */
 export const validateProductName = (productName) => {
   if (!productName || !productName.trim()) {
     return 'Product name is required';
@@ -102,11 +80,7 @@ export const validateProductName = (productName) => {
   return '';
 };
 
-/**
- * Product description validation utility
- * @param {string} description - Description to validate
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validateProductDescription = (description) => {
   if (!description || !description.trim()) {
     return 'Product description is required';
@@ -123,11 +97,7 @@ export const validateProductDescription = (description) => {
   return '';
 };
 
-/**
- * Price validation utility
- * @param {string|number} price - Price to validate
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validatePrice = (price) => {
   if (!price && price !== 0) {
     return 'Price is required';
@@ -147,7 +117,7 @@ export const validatePrice = (price) => {
     return 'Price is too high';
   }
   
-  // Check for valid decimal places (max 2)
+  
   const priceStr = price.toString();
   if (priceStr.includes('.') && priceStr.split('.')[1].length > 2) {
     return 'Price can have maximum 2 decimal places';
@@ -156,11 +126,7 @@ export const validatePrice = (price) => {
   return '';
 };
 
-/**
- * Quantity validation utility
- * @param {string|number} quantity - Quantity to validate
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validateQuantity = (quantity) => {
   if (!quantity && quantity !== 0) {
     return 'Quantity is required';
@@ -187,11 +153,7 @@ export const validateQuantity = (quantity) => {
   return '';
 };
 
-/**
- * OTP validation utility
- * @param {string} otp - OTP to validate
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validateOTP = (otp) => {
   if (!otp || !otp.trim()) {
     return 'OTP is required';
@@ -209,11 +171,7 @@ export const validateOTP = (otp) => {
   return '';
 };
 
-/**
- * User type validation utility
- * @param {string} userType - User type to validate
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validateUserType = (userType) => {
   const validTypes = ['normal_customer', 'vendor', 'vip_customer'];
   
@@ -228,11 +186,7 @@ export const validateUserType = (userType) => {
   return '';
 };
 
-/**
- * Wholesale price validation utility
- * @param {string|number} price - Wholesale price to validate
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validateWholesalePrice = (price) => {
   if (!price && price !== 0) {
     return 'Wholesale price is required';
@@ -261,12 +215,7 @@ export const validateWholesalePrice = (price) => {
   return '';
 };
 
-/**
- * Retail price validation utility
- * @param {string|number} retailPrice - Retail price to validate
- * @param {string|number} wholesalePrice - Wholesale price for comparison
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validateRetailPrice = (retailPrice, wholesalePrice = null) => {
   if (!retailPrice && retailPrice !== 0) {
     return 'Retail price is required';
@@ -286,7 +235,6 @@ export const validateRetailPrice = (retailPrice, wholesalePrice = null) => {
     return 'Retail price is too high';
   }
   
-  // Check for valid decimal places (max 2)
   const priceStr = retailPrice.toString();
   if (priceStr.includes('.') && priceStr.split('.')[1].length > 2) {
     return 'Retail price can have maximum 2 decimal places';
@@ -303,11 +251,7 @@ export const validateRetailPrice = (retailPrice, wholesalePrice = null) => {
   return '';
 };
 
-/**
- * Stock quantity validation utility
- * @param {string|number} stockQuantity - Stock quantity to validate
- * @returns {string} - Error message or empty string if valid
- */
+
 export const validateStockQuantity = (stockQuantity) => {
   if (!stockQuantity && stockQuantity !== 0) {
     return 'Stock quantity is required';
@@ -334,12 +278,6 @@ export const validateStockQuantity = (stockQuantity) => {
   return '';
 };
 
-/**
- * Debounce function for validation
- * @param {function} func - Function to debounce
- * @param {number} wait - Wait time in milliseconds
- * @returns {function} - Debounced function
- */
 export const debounce = (func, wait) => {
   let timeout;
   return function executedFunction(...args) {
